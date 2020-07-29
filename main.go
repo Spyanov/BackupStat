@@ -10,12 +10,10 @@ import (
 	"io/ioutil"
 	"log"
 
-	"os"
-	"path/filepath"
 	"time"
 )
 
-var path = "."
+var path = "c:\\storage"
 
 type clients struct {
 	Id         int    `json:"id"`
@@ -57,15 +55,7 @@ func getRootDirectories(path string) []string {
 
 func createSnapshot(dirName string) snapshot {
 
-	/* работа в текущей директории */
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(dir)
-	/* работа в текущей директории */
-
-	fileList, err := ioutil.ReadDir(dir + "\\" + dirName)
+	fileList, err := ioutil.ReadDir(path + "\\" + dirName)
 	if err != nil {
 		fmt.Println("[getFileListFromDir][Ошибка получения списка файлов из директории][", dirName, "]", err)
 	}
@@ -103,7 +93,7 @@ func contains(clientList []clients, localDir string) bool {
 func createClientsOnTheServer(localDirList []string) {
 	db, err := sql.Open("mysql", "backupService:NYwU8t2yHtERcMnU!*@tcp(backup.xkc1.ru:3306)/backupLog")
 	if err != nil {
-		panic(err)
+		fmt.Println("[createClientsOnTheServer][sql.open]", err)
 	}
 	defer db.Close()
 
@@ -123,21 +113,18 @@ func createClientsOnTheServer(localDirList []string) {
 		clientList = append(clientList, currentClient)
 	}
 
+	//проверяем есть ли имя локальной папки в БД
 	for _, dir := range localDirList {
-		fmt.Println("current dir = ", dir)
 		if contains(clientList, dir) == true {
-			fmt.Println(dir, " есть на сервере")
+			//есть в бд, перескакиваем
 			continue
 		} else {
-			fmt.Println(dir, "нет на сервере")
+			//нет в БД, создаем пользователя с именем локальной папки
 			qs := "INSERT INTO Clients(Name,Folder) VALUES('" + dir + "','" + dir + "');"
-			fmt.Println("qs=", qs)
 			_, err := db.Exec(qs)
 			if err != nil {
 				fmt.Println("Ошибка добавления клиента", err)
 			}
-			fmt.Println("Добавлен клиент: ", dir)
-
 			currentSnapshot := createSnapshot(dir)
 			writeSnapshot(currentSnapshot)
 		}
@@ -153,8 +140,6 @@ func GenerateToken(t time.Time) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Hash to store:", string(hash))
-
 	hasher := md5.New()
 	hasher.Write(hash)
 	return hex.EncodeToString(hasher.Sum(nil))
@@ -163,22 +148,27 @@ func GenerateToken(t time.Time) string {
 func writeSnapshot(record snapshot) {
 	db, err := sql.Open("mysql", "backupService:NYwU8t2yHtERcMnU!*@tcp(backup.xkc1.ru:3306)/backupLog")
 	if err != nil {
-		panic(err)
+		fmt.Println("[writeSnapshot][sql.open]", err)
 	}
 	defer db.Close()
 
 	hash := GenerateToken(time.Now())
 
-	result, err := db.Exec("INSERT INTO snapshots (Name,Date, Size, Hash) VALUES (?,?,?,?)", record.DirName, record.Date, record.Size, hash)
+	_, err = db.Exec("INSERT INTO snapshots (Name,Date, Size, Hash) VALUES (?,?,?,?)", record.DirName, record.Date, record.Size, hash)
 	if err != nil {
-		panic(err)
+		fmt.Println("[writeSnapshot][db.Exec=INSERT INTO snapshots (Name,Date, Size, Hash)]", err)
 	}
-	fmt.Println(result.RowsAffected()) // id добавленного объекта
+	if err == nil {
+		log.Println("[writeSnapshot][", record.DirName, "][Добавлено задание:", hash, "]")
+	}
 
 	for _, file := range record.Files {
 		_, err := db.Exec("INSERT INTO files (Hash, File, Size) VALUES (?,?,?)", hash, file.FileName, file.FleSize)
 		if err != nil {
-			panic(err)
+			fmt.Println("[writeSnapshot][db.Exec=INSERT INTO files (Hash, File, Size)]", err)
+		}
+		if err == nil {
+			log.Println("	[writeSnapshot][Добавлен файл", file.FileName, " к заданию :", hash, "]")
 		}
 	}
 
