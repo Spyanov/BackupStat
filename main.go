@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/martini-contrib/cors"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"log"
 	"net/http"
-
 	"time"
 )
 
@@ -34,6 +34,7 @@ type snapshot struct {
 	Size    int64      `json:"size"`
 	Files   []fileInfo `json:"files"`
 	Date    time.Time  `json:"date"`
+	Hash    string     `json:"hash"`
 }
 
 func getRootDirectories(path string) []string {
@@ -186,10 +187,10 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 	var snapshots []snapshot
 
-	rows, err := db.Query("SELECT `Name`, `Size`  FROM `snapshots` WHERE `Name`='customer1'")
+	rows, err := db.Query("SELECT `Name`, `Size`, `Hash`  FROM `snapshots` WHERE `Name`='customer1'")
 	for rows.Next() {
 		var currentSnap snapshot
-		err := rows.Scan(&currentSnap.DirName, &currentSnap.Size)
+		err := rows.Scan(&currentSnap.DirName, &currentSnap.Size, &currentSnap.Hash)
 		if err != nil {
 			fmt.Println("[index][Ошибка получения данных из таблицы snapshots]", err)
 		}
@@ -225,6 +226,14 @@ func main() {
 	fmt.Println("run")
 
 	m := martini.Classic()
+	m.Use(cors.Allow(&cors.Options{
+		AllowOrigins:     []string{"http://localhost"},
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "PATCH"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
 	m.Get("/", index)
 	m.Get("/play", play)

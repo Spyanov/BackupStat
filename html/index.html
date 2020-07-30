@@ -11,48 +11,117 @@
 </head>
 <body>
 
-
+<div id="app">
     <canvas id="myChart" width="800" height="200"></canvas>
+</div>
+
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+
+    <script type="text/javascript">
+        var app = new Vue({
+            el: '#app',
+            data: {
+                arrJson:[],
+                snapshot: [],
+                resultRegistry:'',
+            },
+            mounted(){
+                this.loading()
+
+            },
+            methods:{
+                loading:function loading(){
+                    var i = 0
+
+
+
+
+                    axios.get("http://localhost:4000/").then( response =>{
+                        var snapshots = response.data;
+                        console.log("snapshots=", snapshots)
+
+                        for (key in snapshots) {
+                            i++
+                        }
+
+                        console.log("i=",i)
+
+
+                        var lb=[]
+
+                        for (let j=0; j<i; j++){
+                            function formatSize(length){
+                                var i = 0, type = ['б','Кб','Мб','Гб','Тб','Пб'];
+                                while((length / 1000 | 0) && i < type.length - 1) {
+                                    length /= 1024;
+                                    i++;
+                                }
+                                return length.toFixed(2) + ' ' + type[i];
+                            }
+
+                            lb.push(snapshots[j].size)
+                            console.log(snapshots[j].size)
+                        }
+
+
+                        var ctx = document.getElementById('myChart');
+
+
+                        var l2 = [];
+                        for (let j=1; j<=i; j++){
+                            l2.push(j)
+                            console.log("l2=", l2)
+                        }
+
+
+                        console.log("lb=", lb)
+
+                        var myChart = new Chart(ctx, {
+                                type: 'bar',
+                                data:{
+                                labels: ['<p>asd</p>','123','546'],
+                                datasets: [{
+                                    label: 'Size',
+                                    data: lb,
+                                    backgroundColor: '#0048ff',
+                                    borderColor: '#000',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    yAxes: [{
+                                        ticks: {
+                                            beginAtZero: true
+                                        }
+                                    }],
+                                },
+                                responsive : false
+                            }
+                        });
+
+                    })
+
+
+                }
+
+            }
+        })
+
+
+
+
+
+
+    </script>
+
 
     <script>
 
 
 
-
-        var ctx = document.getElementById('myChart');
-
-
-        var l1 = 31;
-        var lb = [];
-
-        for (var i=1; i<=l1; i++){
-            lb[i]=i;
-            console.log("lb=",lb)
-        }
-
-        var myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: lb,
-                datasets: [{
-                    label: 'размер: ',
-                    data: lb,
-                    backgroundColor: '#eee',
-                    borderColor: '#000',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    yAxes: [{
-                        ticks: {
-                            beginAtZero: true
-                        }
-                    }]
-                },
-                responsive : false
-            }
-        });
     </script>
 
 
