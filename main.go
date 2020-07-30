@@ -4,11 +4,14 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 	"io/ioutil"
 	"log"
+	"net/http"
 
 	"time"
 )
@@ -174,9 +177,38 @@ func writeSnapshot(record snapshot) {
 
 }
 
-func main() {
-	fmt.Println("run")
+func index(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("mysql", "backupService:NYwU8t2yHtERcMnU!*@tcp(backup.xkc1.ru:3306)/backupLog")
+	if err != nil {
+		fmt.Println("[writeSnapshot][sql.open]", err)
+	}
+	defer db.Close()
 
+	var snapshots []snapshot
+
+	rows, err := db.Query("SELECT `Name`, `Size`  FROM `snapshots` WHERE `Name`='customer1'")
+	for rows.Next() {
+		var currentSnap snapshot
+		err := rows.Scan(&currentSnap.DirName, &currentSnap.Size)
+		if err != nil {
+			fmt.Println("[index][Ошибка получения данных из таблицы snapshots]", err)
+		}
+
+		snapshots = append(snapshots, currentSnap)
+	}
+
+	fmt.Println("snp=", snapshots)
+
+	result, err := json.Marshal(snapshots)
+	if err != nil {
+		fmt.Println("Ошибка преобразования в json")
+	}
+
+	w.Write(result)
+
+}
+
+func play() {
 	//Строим список корневых директорий с файлами
 	localDirList := getRootDirectories(path)
 	//Создаем на сервере нового клиента если появилась новая папка в корневом каталоге
@@ -187,36 +219,15 @@ func main() {
 		curSnapshot := createSnapshot(oldFolder)
 		writeSnapshot(curSnapshot)
 	}
+}
 
-	//var snapshotInfo []snapshot
+func main() {
+	fmt.Println("run")
 
-	//Обходим каждую директорию получая информацию о ее размере, именах файлах и их размере
-	//помещаем результат в срез snapshotInfo.
-	//for _, currentDir := range dirList {
-	//	snaps := getFileListFromDir(currentDir)
-	//	snapshotInfo = append(snapshotInfo, snaps)
-	//
-	//}
+	m := martini.Classic()
 
-	//Пишем в бд информацию о текущем snapshot
+	m.Get("/", index)
+	m.Get("/play", play)
 
-	//fmt.Println("Локальные каталоги", localDirList)
-	//fmt.Println("Клиенты на сервере", clientList)
-
-	//
-	//stor, err := json.Marshal(snapshotInfo)
-	//if err != nil {
-	//	fmt.Println("Ошибка преобразования структуры снепшота в json", err)
-	//}
-	//
-	//out := string(stor)
-	//
-	//fmt.Println("current json = ", out)
-	//
-	//err = ioutil.WriteFile("c:\\storage\\info.txt", stor, 0777)
-	//if err != nil {
-	//	fmt.Println("Ошибка записи файла", err)
-	//}
-
-	//fmt.Println(getRootDirectories(path))
+	m.RunOnAddr(":4000")
 }
