@@ -7,8 +7,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
 
 
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
 
-</head>
+        // Load the Visualization API and the corechart package.
+        google.charts.load('current', {'packages':['corechart']});
+
+        </script>
+
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+
+        </head>
 <body>
 
 <div id="app">
@@ -49,31 +60,21 @@
                         console.log("i=",i)
 
 
-                        var lb=[]
+                        var lb=[];
+
+                        var l2 = [];
 
                         for (let j=0; j<i; j++){
-                            function formatSize(length){
-                                var i = 0, type = ['б','Кб','Мб','Гб','Тб','Пб'];
-                                while((length / 1000 | 0) && i < type.length - 1) {
-                                    length /= 1024;
-                                    i++;
-                                }
-                                return length.toFixed(2) + ' ' + type[i];
-                            }
 
                             lb.push(snapshots[j].size)
                             console.log(snapshots[j].size)
+
+                            l2.push(snapshots[j].hash+"["+snapshots[j].dir_name+"] <strong>test</strong>")
                         }
 
 
                         var ctx = document.getElementById('myChart');
 
-
-                        var l2 = [];
-                        for (let j=1; j<=i; j++){
-                            l2.push(j)
-                            console.log("l2=", l2)
-                        }
 
 
                         console.log("lb=", lb)
@@ -81,7 +82,7 @@
                         var myChart = new Chart(ctx, {
                                 type: 'bar',
                                 data:{
-                                labels: ['<p>asd</p>','123','546'],
+                                labels: l2,
                                 datasets: [{
                                     label: 'Size',
                                     data: lb,
@@ -102,6 +103,40 @@
                             }
                         });
 
+
+
+
+
+                        function drawVisualization() {
+                            // Create and populate the data table.
+                            var addData = []
+                            addData.push(["hash", "size"])
+                            for (let j = 0; j < snapshots.length; j++) {
+                                addData.push([snapshots[j].hash, snapshots[j].size])
+                            }
+
+                            console.log("addData = ", addData)
+
+                            google.charts.load('current', {'packages':['corechart']});
+                            google.charts.setOnLoadCallback(drawChart);
+
+                            function drawChart() {
+                                var data = google.visualization.arrayToDataTable(addData);
+
+                                var options = {
+                                    title: 'Даты и заказы',
+                                    hAxis: {title: 'Year',  titleTextStyle: {color: '#333'}},
+                                    vAxis: {minValue: 0}
+                                };
+
+                                var chart = new google.visualization.AreaChart(document.getElementById('myChart'));
+                                chart.draw(data, options);
+                            }
+                        };
+
+
+                        drawVisualization()
+
                     })
 
 
@@ -117,9 +152,9 @@
 
     </script>
 
+<div id="chart"></div>
 
     <script>
-
 
 
     </script>

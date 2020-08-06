@@ -158,7 +158,7 @@ func writeSnapshot(record snapshot) {
 
 	hash := GenerateToken(time.Now())
 
-	_, err = db.Exec("INSERT INTO snapshots (Name,Date, Size, Hash) VALUES (?,?,?,?)", record.DirName, record.Date, record.Size, hash)
+	_, err = db.Exec("INSERT INTO snapshots (dirName,Date, Size, Hash) VALUES (?,?,?,?)", record.DirName, record.Date, record.Size, hash)
 	if err != nil {
 		fmt.Println("[writeSnapshot][db.Exec=INSERT INTO snapshots (Name,Date, Size, Hash)]", err)
 	}
@@ -187,7 +187,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 	var snapshots []snapshot
 
-	rows, err := db.Query("SELECT `Name`, `Size`, `Hash`  FROM `snapshots` WHERE `Name`='customer1'")
+	rows, err := db.Query("SELECT `dirName`, `Size`, `Hash`  FROM `snapshots` ")
 	for rows.Next() {
 		var currentSnap snapshot
 		err := rows.Scan(&currentSnap.DirName, &currentSnap.Size, &currentSnap.Hash)
@@ -214,10 +214,9 @@ func play() {
 	localDirList := getRootDirectories(path)
 	//Создаем на сервере нового клиента если появилась новая папка в корневом каталоге
 	// имя нового клиента соотвествует имени новой папки
-	createClientsOnTheServer(localDirList)
 
-	for _, oldFolder := range localDirList {
-		curSnapshot := createSnapshot(oldFolder)
+	for _, currentFolder := range localDirList {
+		curSnapshot := createSnapshot(currentFolder)
 		writeSnapshot(curSnapshot)
 	}
 }
