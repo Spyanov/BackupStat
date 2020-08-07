@@ -179,18 +179,18 @@ func writeSnapshot(record snapshot) {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "backupService:NYwU8t2yHtERcMnU!*@tcp(backup.xkc1.ru:3306)/backupLog")
+	db, err := sql.Open("mysql", "backupService:NYwU8t2yHtERcMnU!*@tcp(backup.xkc1.ru:3306)/backupLog?parseTime=true")
 	if err != nil {
-		fmt.Println("[writeSnapshot][sql.open]", err)
+		fmt.Println("[index][sql.open]", err)
 	}
 	defer db.Close()
 
 	var snapshots []snapshot
 
-	rows, err := db.Query("SELECT `dirName`, `Size`, `Hash`  FROM `snapshots` ")
+	rows, err := db.Query("SELECT `dirName`, `Size`, `date`, `Hash`  FROM `snapshots` ")
 	for rows.Next() {
 		var currentSnap snapshot
-		err := rows.Scan(&currentSnap.DirName, &currentSnap.Size, &currentSnap.Hash)
+		err := rows.Scan(&currentSnap.DirName, &currentSnap.Size, &currentSnap.Date, &currentSnap.Hash)
 		if err != nil {
 			fmt.Println("[index][Ошибка получения данных из таблицы snapshots]", err)
 		}
@@ -209,12 +209,57 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func play() {
+type statClientSnapshot struct {
+	Name string `json:"name"`
+}
+
+func statFromName(w http.ResponseWriter, r *http.Request) {
+
+	len := r.ContentLength
+	body := make([]byte, len)
+	r.Body.Read(body)
+
+	fmt.Println("body = ", r.Body)
+
+	var result statClientSnapshot
+
+	err := json.Unmarshal(body, &result.Name)
+	if err != nil {
+		fmt.Println("error decode result", err)
+	}
+
+	fmt.Println("x=", result)
+
+	return
+
+	db, err := sql.Open("mysql", "backupService:NYwU8t2yHtERcMnU!*@tcp(backup.xkc1.ru:3306)/backupLog?parseTime=true")
+	if err != nil {
+		fmt.Println("[index][sql.open]", err)
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT `dirName`, `Size`, `date`, `Hash`  FROM `snapshots` where ")
+	for rows.Next() {
+		var currentSnap snapshot
+		err := rows.Scan(&currentSnap.DirName, &currentSnap.Size, &currentSnap.Date, &currentSnap.Hash)
+		if err != nil {
+			fmt.Println("[index][Ошибка получения данных из таблицы snapshots]", err)
+		}
+	}
+
+	//result, err := json.Marshal(snapshots)
+	//if err != nil {
+	//	fmt.Println("Ошибка преобразования в json")
+	//}
+	//
+	//w.Write(result)
+
+}
+
+func doSnapshot() {
 	//Строим список корневых директорий с файлами
 	localDirList := getRootDirectories(path)
-	//Создаем на сервере нового клиента если появилась новая папка в корневом каталоге
-	// имя нового клиента соотвествует имени новой папки
-
+	//поочередно собираем статистику по каждой директории и пишем в БД
 	for _, currentFolder := range localDirList {
 		curSnapshot := createSnapshot(currentFolder)
 		writeSnapshot(curSnapshot)
@@ -235,7 +280,8 @@ func main() {
 	}))
 
 	m.Get("/", index)
-	m.Get("/play", play)
+	m.Get("/doSnapshot", doSnapshot)
+	m.Post("/stat", statFromName)
 
 	m.RunOnAddr(":4000")
 }

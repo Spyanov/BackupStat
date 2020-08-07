@@ -26,6 +26,11 @@
     <canvas id="myChart" width="800" height="200"></canvas>
 </div>
 
+
+
+
+
+
     <script src="https://unpkg.com/vue"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
@@ -65,83 +70,15 @@
                         var l2 = [];
 
                         for (let j=0; j<i; j++){
-
-                            lb.push(snapshots[j].size)
-                            console.log(snapshots[j].size)
-
-                            l2.push(snapshots[j].hash+"["+snapshots[j].dir_name+"] <strong>test</strong>")
                         }
 
 
                         var ctx = document.getElementById('myChart');
-
-
-
                         console.log("lb=", lb)
 
-                        var myChart = new Chart(ctx, {
-                                type: 'bar',
-                                data:{
-                                labels: l2,
-                                datasets: [{
-                                    label: 'Size',
-                                    data: lb,
-                                    backgroundColor: '#0048ff',
-                                    borderColor: '#000',
-                                    borderWidth: 1
-                                }]
-                            },
-                            options: {
-                                scales: {
-                                    yAxes: [{
-                                        ticks: {
-                                            beginAtZero: true
-                                        }
-                                    }],
-                                },
-                                responsive : false
-                            }
-                        });
-
-
-
-
-
-                        function drawVisualization() {
-                            // Create and populate the data table.
-                            var addData = []
-                            addData.push(["hash", "size"])
-                            for (let j = 0; j < snapshots.length; j++) {
-                                addData.push([snapshots[j].hash, snapshots[j].size])
-                            }
-
-                            console.log("addData = ", addData)
-
-                            google.charts.load('current', {'packages':['corechart']});
-                            google.charts.setOnLoadCallback(drawChart);
-
-                            function drawChart() {
-                                var data = google.visualization.arrayToDataTable(addData);
-
-                                var options = {
-                                    title: 'Даты и заказы',
-                                    hAxis: {title: 'Year',  titleTextStyle: {color: '#333'}},
-                                    vAxis: {minValue: 0}
-                                };
-
-                                var chart = new google.visualization.AreaChart(document.getElementById('myChart'));
-                                chart.draw(data, options);
-                            }
-                        };
-
-
-                        drawVisualization()
 
                     })
-
-
                 }
-
             }
         })
 
@@ -152,7 +89,7 @@
 
     </script>
 
-<div id="chart"></div>
+
 
     <script>
 
