@@ -215,22 +215,12 @@ type statClientSnapshot struct {
 
 func statFromName(w http.ResponseWriter, r *http.Request) {
 
-	len := r.ContentLength
-	body := make([]byte, len)
-	r.Body.Read(body)
-
-	fmt.Println("body = ", r.Body)
-
 	var result statClientSnapshot
 
-	err := json.Unmarshal(body, &result.Name)
+	err := json.NewDecoder(r.Body).Decode(&result)
 	if err != nil {
-		fmt.Println("error decode result", err)
+		fmt.Println("error decode struct ", err)
 	}
-
-	fmt.Println("x=", result)
-
-	return
 
 	db, err := sql.Open("mysql", "backupService:NYwU8t2yHtERcMnU!*@tcp(backup.xkc1.ru:3306)/backupLog?parseTime=true")
 	if err != nil {
@@ -238,21 +228,33 @@ func statFromName(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SELECT `dirName`, `Size`, `date`, `Hash`  FROM `snapshots` where ")
-	for rows.Next() {
-		var currentSnap snapshot
-		err := rows.Scan(&currentSnap.DirName, &currentSnap.Size, &currentSnap.Date, &currentSnap.Hash)
-		if err != nil {
-			fmt.Println("[index][Ошибка получения данных из таблицы snapshots]", err)
+	query := "SELECT `dirName`, `Size`, `date`, `Hash`  FROM `snapshots` where `dirName` = '" + result.Name + "'"
+	fmt.Println("query = ", query)
+
+	var snapshotsForName []snapshot
+
+	rows, err := db.Query(query)
+	if err != nil {
+		fmt.Println("Ошибка получения записи", err)
+	} else {
+
+		for rows.Next() {
+			var currentSnap snapshot
+			err := rows.Scan(&currentSnap.DirName, &currentSnap.Size, &currentSnap.Date, &currentSnap.Hash)
+			if err != nil {
+				fmt.Println("[index][Ошибка получения данных из таблицы snapshots]", err)
+			}
+
+			snapshotsForName = append(snapshotsForName, currentSnap)
 		}
 	}
+	res, err := json.Marshal(snapshotsForName)
+	if err != nil {
+		fmt.Println("Ошибка преобразования в json")
+	}
 
-	//result, err := json.Marshal(snapshots)
-	//if err != nil {
-	//	fmt.Println("Ошибка преобразования в json")
-	//}
-	//
-	//w.Write(result)
+	w.WriteHeader(200)
+	w.Write(res)
 
 }
 

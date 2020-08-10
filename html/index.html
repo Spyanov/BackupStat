@@ -26,11 +26,6 @@
     <canvas id="myChart" width="800" height="200"></canvas>
 </div>
 
-
-
-
-
-
     <script src="https://unpkg.com/vue"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
@@ -50,9 +45,6 @@
             methods:{
                 loading:function loading(){
                     var i = 0
-
-
-
 
                     axios.get("http://localhost:4000/").then( response =>{
                         var snapshots = response.data;
